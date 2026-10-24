@@ -1,0 +1,72 @@
+name: Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'android-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Poskládá projekt správně do složek. Funguje, i když jsou soubory v repozitáři nahrané všechny na hromadě.
+      - name: Sestavit strukturu projektu
+        run: |
+          set -e
+          if [ -f app/build.gradle.kts ]; then
+            P=.
+          else
+            P=proj
+            mkdir -p $P/app/src/main/java/cz/mega/mytubefeed $P/app/src/main/assets
+            cp settings.gradle.kts gradle.properties $P/
+            for f in build.gradle*.kts; do
+              if grep -q 'apply false' "$f"; then cp "$f" $P/build.gradle.kts; else cp "$f" $P/app/build.gradle.kts; fi
+            done
+            cp AndroidManifest.xml $P/app/src/main/
+            cp MainActivity.java $P/app/src/main/java/cz/mega/mytubefeed/
+            cp index.html app.js style.css $P/app/src/main/assets/
+            cp mytubefeed.keystore $P/app/
+            for f in ic_launcher*.png; do
+              w=$(python3 -c "import struct,sys; print(struct.unpack('>I', open(sys.argv[1],'rb').read(24)[16:20])[0])" "$f")
+              case $w in
+                48) d=mdpi;; 72) d=hdpi;; 96) d=xhdpi;; 144) d=xxhdpi;; 192) d=xxxhdpi;; *) continue;;
+              esac
+              mkdir -p $P/app/src/main/res/mipmap-$d
+              cp "$f" $P/app/src/main/res/mipmap-$d/ic_launcher.png
+            done
+          fi
+          echo "PROJ=$P" >> "$GITHUB_ENV"
+          find $P -type f -not -path '*/.git/*' | sort | head -50
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build APK
+        run: cd "$PROJ" && gradle assembleRelease --no-daemon --stacktrace
+
+      - name: Prepare APK
+        run: cp "$PROJ/app/build/outputs/apk/release/app-release.apk" MyTubeFeed-Android.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MyTubeFeed-Android
+          path: MyTubeFeed-Android.apk
+
+      - name: Publish release with APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'android-latest' }}
+          name: MyTube Feed Android
+          files: MyTubeFeed-Android.apk
