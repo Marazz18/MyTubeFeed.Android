@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MyTube Feed</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="top">
+    <h1>MyTube Feed</h1>
+    <div class="bar">
+      <label class="chk"><input id="hideSeen" type="checkbox"> Skrýt zhlédnutá</label>
+      <label class="chk"><input id="hideShorts" type="checkbox"> Skrýt shorts</label>
+      <button id="newFolder" class="icon" title="Přidat složku">+</button>
+      <div class="menuwrap">
+        <button id="menuBtn" class="icon" title="Další nastavení">⚙</button>
+        <div id="menu" class="menu" hidden></div>
+      </div>
+    </div>
+  </div>
+  <nav class="tabs">
+    <button data-tab="feed" class="on">Můj feed</button>
+    <button data-tab="folders">Složky</button>
+    <button data-tab="search">Hledat</button>
+    <button id="filterBtn" class="filter">Složky ▾</button>
+  </nav>
+</header>
+<main id="main"></main>
+<div id="overlay" hidden></div>
+<div id="toast" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>
